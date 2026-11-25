@@ -1,5 +1,5 @@
 {
   "phpmd.enabled": false,
   "php.validate.enable": false,
-  "intelephense.environment.phpVersion": "8.3"
+  "intelephense.environment.phpVersion": "8.4"
 }

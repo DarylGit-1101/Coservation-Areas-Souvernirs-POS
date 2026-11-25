@@ -10,11 +10,12 @@ Always consult the official documentation below before configuring, upgrading, o
 
 | Technology | Latest Verified Version | Official Documentation | Key Notes |
 | :--- | :--- | :--- | :--- |
-| **PHP** | `8.6` (active branches: `8.5`, `8.4`, `8.3`) | https://www.php.net/docs.php | Laravel 13 requires **PHP 8.3+**. |
-| **Laravel** | `13.x` | https://laravel.com/docs | Requires PHP 8.3+; bug fixes until Q3 2027, security fixes until Mar 2028. |
-| **Laravel Reverb** | Latest (Laravel 13 first-party) | https://laravel.com/docs/broadcasting#laravels-reverb | Install via `php artisan install:broadcasting`, run via `php artisan reverb:start`. |
-| **Filament** | `v5.x` (`^5.0`) | https://filamentphp.com/docs/5.x | Native Livewire v4 support; requires Tailwind CSS v4.1+ and Laravel 11.28+. |
-| **PostgreSQL** | `19` | https://www.postgresql.org/docs/current/ | Use `BIGINT` for all money columns (minor units / cents). |
+| **PHP** | `8.4` (Docker `php:8.4-fpm-alpine`; active branches `8.3`–`8.6`) | https://www.php.net/docs.php | Laravel 13 requires **PHP 8.3+**. |
+| **Laravel** | `13.44.x` (`^13.17`) | https://laravel.com/docs | Requires PHP 8.3+; bug fixes until Q3 2027, security fixes until Mar 2028. |
+| **Laravel Sanctum** | `4.5.x` (`^4.0`) | https://laravel.com/docs/sanctum | Installed via `php artisan install:api`; powers POS API token auth & Reverb private channel auth. |
+| **Laravel Reverb** | `1.14.x` (`^1.0`) | https://laravel.com/docs/broadcasting#laravels-reverb | Installed via `php artisan install:broadcasting --reverb --without-node`, runs via `pos_reverb` (`--profile reverb`). |
+| **Filament** | `5.12.x` (`^5.0`) | https://filamentphp.com/docs/5.x | Native Livewire v4 (`4.4.x`) support; back-office admin panel at `/admin`. |
+| **PostgreSQL** | `17` (Docker `postgres:17-alpine`) | https://www.postgresql.org/docs/current/ | Use `BIGINT` for all money columns (minor units / cents). |
 
 ---
 
