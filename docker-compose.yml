@@ -1,0 +1,133 @@
+x-backend-common: &backend-common
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+  restart: unless-stopped
+  working_dir: /var/www/backend
+  volumes:
+    - ./backend:/var/www/backend
+  environment:
+    - DB_CONNECTION=pgsql
+    - DB_HOST=postgres
+    - DB_PORT=5432
+    - DB_DATABASE=${DB_DATABASE:-pos_db}
+    - DB_USERNAME=${DB_USERNAME:-pos_user}
+    - DB_PASSWORD=${DB_PASSWORD:-pos_secret}
+    - REDIS_CLIENT=phpredis
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - CACHE_STORE=redis
+    - QUEUE_CONNECTION=redis
+    - SESSION_DRIVER=redis
+    - OPCACHE_VALIDATE_TIMESTAMPS=${OPCACHE_VALIDATE_TIMESTAMPS:-1}
+    - OPCACHE_REVALIDATE_FREQ=${OPCACHE_REVALIDATE_FREQ:-2}
+  networks:
+    - pos_network
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *backend-common
+    container_name: pos_backend
+
+  queue:
+    <<: *backend-common
+    container_name: pos_queue
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=1", "--tries=3", "--max-time=3600"]
+
+  scheduler:
+    <<: *backend-common
+    container_name: pos_scheduler
+    command: ["php", "artisan", "schedule:work"]
+
+  # Enable once Laravel Reverb is installed: docker compose --profile reverb up -d
+  reverb:
+    <<: *backend-common
+    container_name: pos_reverb
+    profiles: ["reverb"]
+    ports:
+      - "8080:8080"
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: pos_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/backend:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - pos_network
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: pos_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - max_connections=100
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pos_db}
+      POSTGRES_USER: ${DB_USERNAME:-pos_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pos_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-pos_user} -d ${DB_DATABASE:-pos_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pos_network
+
+  redis:
+    image: redis:alpine
+    container_name: pos_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    # AOF persistence protects queued jobs across power outages; volatile-lru only evicts TTL keys (cache/sessions)
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - volatile-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - pos_network
+
+networks:
+  pos_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

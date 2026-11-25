@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "bmewburn.vscode-intelephense-client",
+    "vue.volar"
+  ],
+  "unwantedRecommendations": [
+    "ecodes.vscode-phpmd"
+  ]
+}
